@@ -9,6 +9,7 @@
 #include <stdlib.h>       /* for atoi() and exit() */
 #include <string.h>       /* for memset() */
 #include <unistd.h>      /* for close() */
+#include <signal.h> // To catch SIGTERM
 
 #define RCVBUFSIZE 2048
 
@@ -20,7 +21,9 @@ char* getMethod(char* buffer, size_t size);
 void getFile(char* buffer, size_t bytesRcvd, char** res);
 int getVer(char* buffer, size_t bytesRcvd);
 void genOK(char* meth, char* file, char** res, int* size);
-char* genBadRequest();
-char* genUnsupVersion();
+void genBadRequest(char** res, int* size);
+void genUnsupVersion(char** res, int* size);
+void genNotFound(char** res, int* size);
+void term(int signum);
 
 #endif

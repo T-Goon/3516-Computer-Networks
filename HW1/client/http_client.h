@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <time.h>
+#include <sys/poll.h>
 
 #define RCVBUFSIZE 2048
 
