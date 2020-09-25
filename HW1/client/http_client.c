@@ -53,6 +53,8 @@ int main (int argc, char* argv[]){
   getRequest = malloc(strlen(path)+38);
   memset(getRequest, 0, strlen(path)+38);
   sprintf(getRequest, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", path, urlIP);
+  printf("%s\n", getRequest);
+  printf("%s\n", portNum);
 
 
   memset(&hints, 0, sizeof(hints));
