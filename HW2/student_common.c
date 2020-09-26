@@ -4,7 +4,7 @@
 /**
   Creates and returns a pointer to a new packet.
   seqnum: sequence number of the packet. (SEQ|SEQ1)
-  acknum: acknowledgement type (ACK|NAK|NULL)
+  acknum: acknowledgement type (ACK|NAK)
   checksum: checksum value of the packet.
   payload: the content of the packet
   return: pointer to a new packet filled in with given values.
@@ -33,9 +33,9 @@ int isCorrupt(struct pkt* packet){
   int checksum = calculateChecksum(packet->payload, packet->acknum, packet->seqnum);
 
   if(packet->checksum == checksum)
-    return TRUE;
+    return FALSE;
 
-  return FALSE;
+  return TRUE;
 }
 
 // Calculates the checksum value.

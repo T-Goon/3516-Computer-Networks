@@ -1,14 +1,17 @@
 #include "project2.h"
 #include "student_common.h"
 
+#define RCV_STATE 0
 
 int current_state;
+int current_seq;
 /*
  * The following routine will be called once (only) before any other
  * entity B routines are called. You can use it to do any initialization
  */
 void B_init() {
-  current_state = SEQ0;
+  current_state = RCV_STATE;
+  current_seq = SEQ0;
 }
 /*
  * B_input(packet),where packet is a structure of type pkt. This routine
@@ -17,13 +20,27 @@ void B_init() {
  * packet is the (possibly corrupted) packet sent from the A-side.
  */
 void B_input(struct pkt packet) {
+  printf("%s\n", "b input");
+  int acknowledgement;
+  char* empty = malloc(sizeof(MESSAGE_LENGTH));
+  memset(empty, 0, MESSAGE_LENGTH);
 
-  if(isCorrupt(&packet)){
-    char* empty = malloc(sizeof(MESSAGE_LENGTH));
-    memset(empty, 0, MESSAGE_LENGTH);
-    int checksum = calculateChecksum(empty, NAK, current_state);
-    struct pkt* response = makePacket(packet->seqnum, NAK, );
+  // Create and sent NAK if corrupt
+  if(isCorrupt(&packet) == TRUE){
+    acknowledgement = NAK;
+  } else{
+    acknowledgement = ACK;
   }
+  printf("b ack %d\n", acknowledgement);
+  int checksum = calculateChecksum(empty, acknowledgement, current_seq);
+  struct pkt* response = makePacket(current_seq, acknowledgement, checksum, empty);
+  tolayer3(BEntity, *response);
+  free(empty);
+  free(response);
+
+  // Don't deliver message if corrupt
+  if(acknowledgement == NAK)
+    return;
 
   struct msg* message = malloc(sizeof(message));
   memcpy(message->data, packet.payload, MESSAGE_LENGTH);

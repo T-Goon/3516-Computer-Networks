@@ -1,13 +1,33 @@
 #include "project2.h"
 #include "student_common.h"
 
+#define SEND_STATE 0
+#define WAIT_RES_STATE 1
+
 struct pkt* current_packet;
+int current_seq;
 int current_state;
+
+struct msg_queue;
+struct msg_queue{
+  struct msg message;
+  struct msg_queue* next;
+};
+
+struct msg_queue* queue_start;
+struct msg_queue* queue_end;
+
+void addToQueue(struct msg message);
+struct msg* queuePop();
+void sendMessage(struct msg* message);
 
 /* The following routine will be called once (only) before any other    */
 /* entity A routines are called. You can use it to do any initialization */
 void A_init() {
-  current_state = SEQ0;
+  current_seq = SEQ0;
+  current_state = SEND_STATE;
+  queue_start = NULL;
+  queue_end = NULL;
 }
 
 /*
@@ -18,11 +38,25 @@ void A_init() {
  * in-order, and correctly, to the receiving side upper layer.
  */
 void A_output(struct msg message) {
-  int checksum = calculateChecksum(message.data, 0, current_state);
+  printf("%s\n", "A output");
+  if(current_state == WAIT_RES_STATE){
+    addToQueue(message);
+  }else{
+    sendMessage(&message);
+  }
 
-  current_packet = makePacket(current_state, NULL, checksum, message.data);
+}
 
-  tolayer3(AEntity, *packet);
+// Makes a packet and sends it to EntityB
+void sendMessage(struct msg* message){
+  printf("%s\n", "A send message");
+  int checksum = calculateChecksum(message->data, ACK, current_seq);
+
+  current_packet = makePacket(current_seq, ACK, checksum, message->data);
+
+  tolayer3(AEntity, *current_packet);
+
+  current_state = WAIT_RES_STATE;
 }
 
 /*
@@ -32,8 +66,22 @@ void A_output(struct msg message) {
  * packet is the (possibly corrupted) packet sent from the B-side.
  */
 void A_input(struct pkt packet) {
+  printf("%s\n", "A input");
+  // If response is corrupted or acknowledgement is NAK, resend packet
+  printf("a ack %d %d\n",packet.acknum == NAK, isCorrupt(&packet) == TRUE);
+  if(packet.acknum == NAK || isCorrupt(&packet) == TRUE){
+    tolayer3(AEntity, *current_packet);
+  }else if(packet.acknum == ACK){
+    free(current_packet);
+    current_state = SEND_STATE;
 
-  free(current_packet);
+    // Send any messages in the queue
+    if(queue_start != NULL){
+      struct msg* message = queuePop();
+      sendMessage(message);
+      free(message);
+    }
+  }
 }
 
 
@@ -45,4 +93,39 @@ void A_input(struct pkt packet) {
  */
 void A_timerinterrupt() {
 
+}
+
+// Adds a message to the message queue
+void addToQueue(struct msg message){
+  printf("%s %s\n", "A add queue", message.data);
+  // Create a new queue node
+  struct msg_queue* new = malloc(sizeof(struct msg_queue));
+  memcpy(&new->message, &message, sizeof(struct msg));
+  new->next = NULL;
+
+  if(queue_start == NULL){
+    // Queue emtpy
+    queue_start = new;
+    queue_end = new;
+  }else{
+    // Add node to the end of list
+    queue_end->next = new;
+    queue_end = new;
+  }
+}
+
+// Pop a message out of the queue
+struct msg* queuePop(){
+  printf("%s\n", "A pop");
+  if(queue_start == NULL)
+    return NULL;
+
+  struct msg* message = malloc(sizeof(struct msg));
+  memcpy(message, &queue_start->message, sizeof(struct msg));
+
+  struct msg_queue* old = queue_start;
+  queue_start = queue_start->next;
+  free(old);
+
+  return message;
 }
