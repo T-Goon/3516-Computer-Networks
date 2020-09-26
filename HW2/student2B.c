@@ -20,31 +20,35 @@ void B_init() {
  * packet is the (possibly corrupted) packet sent from the A-side.
  */
 void B_input(struct pkt packet) {
-  printf("%s\n", "b input");
   int acknowledgement;
   char* empty = malloc(sizeof(MESSAGE_LENGTH));
   memset(empty, 0, MESSAGE_LENGTH);
 
+  //printf("b NAK %d %d\n",isCorrupt(&packet) == TRUE , packet.seqnum != current_seq);
+  //printf("b nums %d %d\n",packet.seqnum, current_seq);
   // Create and sent NAK if corrupt
   if(isCorrupt(&packet) == TRUE){
     acknowledgement = NAK;
   } else{
     acknowledgement = ACK;
   }
-  printf("b ack %d\n", acknowledgement);
+  //printf("b ack %d\n", acknowledgement);
   int checksum = calculateChecksum(empty, acknowledgement, current_seq);
   struct pkt* response = makePacket(current_seq, acknowledgement, checksum, empty);
   tolayer3(BEntity, *response);
   free(empty);
   free(response);
 
-  // Don't deliver message if corrupt
-  if(acknowledgement == NAK)
+  // Don't deliver message wrong seq or currupt
+  if(acknowledgement == NAK ||  packet.seqnum != current_seq)
     return;
 
   struct msg* message = malloc(sizeof(message));
   memcpy(message->data, packet.payload, MESSAGE_LENGTH);
   tolayer5(BEntity, *message);
+
+  // Change sequence number
+  current_seq = changeSEQ(current_seq);
 
   free(message);
 }

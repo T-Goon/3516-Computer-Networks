@@ -51,3 +51,11 @@ int calculateChecksum(char* vdata, int acknum, int seqnum){
 
         return checksum;
 }
+
+// Returns the opposite sequence number passed in.
+int changeSEQ(int num){
+  if(num == SEQ0)
+    return SEQ1;
+  else if(num == SEQ1)
+    return SEQ0;
+}

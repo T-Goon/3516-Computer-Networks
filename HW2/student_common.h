@@ -13,3 +13,5 @@ struct pkt* makePacket(int seqnum, int acknum, int checksum,
 int isCorrupt(struct pkt* packet);
 
 int calculateChecksum(char* vdata, int acknum, int seqnum);
+
+int changeSEQ(int num);

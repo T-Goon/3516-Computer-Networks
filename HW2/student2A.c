@@ -3,6 +3,7 @@
 
 #define SEND_STATE 0
 #define WAIT_RES_STATE 1
+#define A_TIME_UNIT 100
 
 struct pkt* current_packet;
 int current_seq;
@@ -38,7 +39,6 @@ void A_init() {
  * in-order, and correctly, to the receiving side upper layer.
  */
 void A_output(struct msg message) {
-  printf("%s\n", "A output");
   if(current_state == WAIT_RES_STATE){
     addToQueue(message);
   }else{
@@ -49,12 +49,12 @@ void A_output(struct msg message) {
 
 // Makes a packet and sends it to EntityB
 void sendMessage(struct msg* message){
-  printf("%s\n", "A send message");
   int checksum = calculateChecksum(message->data, ACK, current_seq);
 
   current_packet = makePacket(current_seq, ACK, checksum, message->data);
 
   tolayer3(AEntity, *current_packet);
+  startTimer(AEntity, A_TIME_UNIT);
 
   current_state = WAIT_RES_STATE;
 }
@@ -66,14 +66,21 @@ void sendMessage(struct msg* message){
  * packet is the (possibly corrupted) packet sent from the B-side.
  */
 void A_input(struct pkt packet) {
-  printf("%s\n", "A input");
+  if(current_state == SEND_STATE)
+    return;
+
   // If response is corrupted or acknowledgement is NAK, resend packet
-  printf("a ack %d %d\n",packet.acknum == NAK, isCorrupt(&packet) == TRUE);
-  if(packet.acknum == NAK || isCorrupt(&packet) == TRUE){
+  stopTimer(AEntity);
+  if(isCorrupt(&packet) == TRUE || packet.acknum == NAK){
+
     tolayer3(AEntity, *current_packet);
+    startTimer(AEntity, A_TIME_UNIT);
   }else if(packet.acknum == ACK){
     free(current_packet);
     current_state = SEND_STATE;
+
+    // Change sequence number
+    current_seq = changeSEQ(current_seq);
 
     // Send any messages in the queue
     if(queue_start != NULL){
@@ -92,12 +99,12 @@ void A_input(struct pkt packet) {
  * and stoptimer() in the writeup for how the timer is started and stopped.
  */
 void A_timerinterrupt() {
-
+  tolayer3(AEntity, *current_packet);
+  startTimer(AEntity, A_TIME_UNIT);
 }
 
 // Adds a message to the message queue
 void addToQueue(struct msg message){
-  printf("%s %s\n", "A add queue", message.data);
   // Create a new queue node
   struct msg_queue* new = malloc(sizeof(struct msg_queue));
   memcpy(&new->message, &message, sizeof(struct msg));
@@ -116,7 +123,6 @@ void addToQueue(struct msg message){
 
 // Pop a message out of the queue
 struct msg* queuePop(){
-  printf("%s\n", "A pop");
   if(queue_start == NULL)
     return NULL;
 
