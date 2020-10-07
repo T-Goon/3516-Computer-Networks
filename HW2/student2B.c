@@ -21,28 +21,29 @@ void B_init() {
  */
 void B_input(struct pkt packet) {
   int acknowledgement;
+  // Empty content of response messages
   char* empty = malloc(sizeof(MESSAGE_LENGTH));
   memset(empty, 0, MESSAGE_LENGTH);
 
-  //printf("b NAK %d %d\n",isCorrupt(&packet) == TRUE , packet.seqnum != current_seq);
-  //printf("b nums %d %d\n",packet.seqnum, current_seq);
-  // Create and sent NAK if corrupt
+  // Check for corruption
   if(isCorrupt(&packet) == TRUE){
     acknowledgement = NAK;
   } else{
     acknowledgement = ACK;
   }
-  //printf("b ack %d\n", acknowledgement);
+
+  // Send a response to sender
   int checksum = calculateChecksum(empty, acknowledgement, current_seq);
   struct pkt* response = makePacket(current_seq, acknowledgement, checksum, empty);
   tolayer3(BEntity, *response);
   free(empty);
   free(response);
 
-  // Don't deliver message wrong seq or currupt
+  // Don't deliver message wrong sequence or currupt
   if(acknowledgement == NAK ||  packet.seqnum != current_seq)
     return;
 
+  // Deliver message
   struct msg* message = malloc(sizeof(message));
   memcpy(message->data, packet.payload, MESSAGE_LENGTH);
   tolayer5(BEntity, *message);

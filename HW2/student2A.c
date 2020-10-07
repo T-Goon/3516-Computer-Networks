@@ -39,23 +39,25 @@ void A_init() {
  * in-order, and correctly, to the receiving side upper layer.
  */
 void A_output(struct msg message) {
+  // If sender is waiting for a response add message to the queue
   if(current_state == WAIT_RES_STATE){
     addToQueue(message);
-  }else{
+  }else{ // Send message if sender is ready to send
     sendMessage(&message);
   }
-
 }
 
 // Makes a packet and sends it to EntityB
 void sendMessage(struct msg* message){
+  // Create packet
   int checksum = calculateChecksum(message->data, ACK, current_seq);
-
   current_packet = makePacket(current_seq, ACK, checksum, message->data);
 
+  // Send packet and start timer
   tolayer3(AEntity, *current_packet);
   startTimer(AEntity, A_TIME_UNIT);
 
+  // Change state to waiting for response
   current_state = WAIT_RES_STATE;
 }
 
@@ -66,16 +68,19 @@ void sendMessage(struct msg* message){
  * packet is the (possibly corrupted) packet sent from the B-side.
  */
 void A_input(struct pkt packet) {
+  // If sender is not expecting a response do nothing
   if(current_state == SEND_STATE)
     return;
 
-  // If response is corrupted or acknowledgement is NAK, resend packet
+  // Stop timer and check if response is corrupted or NAK
   stopTimer(AEntity);
   if(isCorrupt(&packet) == TRUE || packet.acknum == NAK){
-
+    // Resend packet if NAK or corrupted
     tolayer3(AEntity, *current_packet);
     startTimer(AEntity, A_TIME_UNIT);
+
   }else if(packet.acknum == ACK){
+    // Change state to be ready to send
     free(current_packet);
     current_state = SEND_STATE;
 
@@ -99,6 +104,7 @@ void A_input(struct pkt packet) {
  * and stoptimer() in the writeup for how the timer is started and stopped.
  */
 void A_timerinterrupt() {
+  // A packet was lost resend the packet
   tolayer3(AEntity, *current_packet);
   startTimer(AEntity, A_TIME_UNIT);
 }
@@ -123,12 +129,15 @@ void addToQueue(struct msg message){
 
 // Pop a message out of the queue
 struct msg* queuePop(){
+  // Return null if queue is empty
   if(queue_start == NULL)
     return NULL;
 
+  // Make a copy of the message in the queue
   struct msg* message = malloc(sizeof(struct msg));
   memcpy(message, &queue_start->message, sizeof(struct msg));
 
+  // Move the head of the queue to the next node
   struct msg_queue* old = queue_start;
   queue_start = queue_start->next;
   free(old);
