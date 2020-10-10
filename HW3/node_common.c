@@ -2,7 +2,7 @@
 
 // Send the nodes min cost row to all neighbors
 void broadcast(int sourceid, struct NeighborCosts* neighbors,
-  struct distance_table* dt){
+  struct distance_table* dt, float time){
 
   for(int i=0; i<MAX_NODES; i++){
     // Nodes that is not the sending node
@@ -15,6 +15,8 @@ void broadcast(int sourceid, struct NeighborCosts* neighbors,
 
       // Send packet
       toLayer2(pkt);
+
+      sndMsg(pkt.destid, pkt.sourceid, dt, time);
     }
   }
 }
@@ -25,7 +27,7 @@ int updateDt(int rcvId, struct distance_table* rcvDt,
   int updtFlag = NO;
 
   // Copy the min costs of the sender into receiver table
-  memcpy(&rcvDt->costs[sndId], &sndCosts, sizeof(int)*MAX_NODES);
+  memcpy(&(rcvDt->costs[sndId]), sndCosts, sizeof(int)*MAX_NODES);
 
   // Apply the distance vector algorithm
   for(int i=0; i<MAX_NODES; i++){
@@ -38,6 +40,32 @@ int updateDt(int rcvId, struct distance_table* rcvDt,
   }
 
   return updtFlag;
+}
+
+// Message to print out when the node initializes.
+void initMsg(int id, struct distance_table* dt, float time){
+  printf("At time t=%f, rtinit%d() called.\n", time, id);
+  printf("At time t=%f, node %d initial distance vector: %d %d %d %d\n", time, id,
+  dt->costs[id][0], dt->costs[id][1], dt->costs[id][2], dt->costs[id][3]);
+}
+
+// Message to print when node sends packet to another node
+void sndMsg(int rcvid, int sndid, struct distance_table* dt, float time){
+  printf("At time t=%f, node %d sends packet to node %d with: %d %d %d %d\n",
+  time, sndid, rcvid, dt->costs[sndid][0], dt->costs[sndid][1], dt->costs[sndid][2],
+  dt->costs[sndid][3]);
+}
+
+// Messgae to print when node receives a packet from another node
+void rcvMsg(int rcvid, int sndid, float time){
+  printf("At time t=%f, rtupdate%d() called, by a pkt received from Sender id: %d.\n",
+  time, rcvid, sndid);
+}
+
+// Prints the current distance vector of the node.
+void currentDTmsg(int id, struct distance_table* dt, float time){
+  printf("At time t=%f, node %d current distance vector: %d %d %d %d\n",
+  time, id, dt->costs[id][0], dt->costs[id][1], dt->costs[id][2], dt->costs[id][3]);
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -90,15 +118,3 @@ void printdt( int MyNodeNumber, struct NeighborCosts *neighbor,
     }
     printf("\n");
 }    // End of printdt
-
-// Prints out the entire distance table
-void printdtALL(int MyNodeNumber, struct distance_table *dtptr){
-     printf("DT%d\n", MyNodeNumber);
-
-     for(int i=0; i<MAX_NODES; i++){
-       for(int j=0; j<MAX_NODES; j++){
-         printf("%d ", dtptr->costs[i][j]);
-       }
-       printf("\n");
-     }
-}

@@ -3,6 +3,7 @@
 #define NODE_NUM 0
 
 extern int TraceLevel;
+extern float clocktime;
 
 struct distance_table dt0;
 struct NeighborCosts *neighbor0;
@@ -23,14 +24,24 @@ void rtinit0() {
 
   memcpy(&dt0.costs, &temp, sizeof(int) * MAX_NODES * MAX_NODES);
 
-  //printdt(NODE_NUM, neighbor0, &dt0);
-  printdtALL(NODE_NUM, &dt0);
+  initMsg(NODE_NUM, &dt0, clocktime);
 
   // Broadcast current nodes distances to neighbors
-  broadcast(NODE_NUM, neighbor0, &dt0);
+  broadcast(NODE_NUM, neighbor0, &dt0, clocktime);
 }
 
 
 void rtupdate0( struct RoutePacket *rcvdpkt ) {
+  rcvMsg(NODE_NUM, rcvdpkt->sourceid, clocktime);
 
+  // Update this node's distance table
+  int updated = updateDt(NODE_NUM, &dt0, rcvdpkt->sourceid, rcvdpkt->mincost);
+
+  // Chck if distance table has been updated
+  if(updated == YES){
+    currentDTmsg(NODE_NUM, &dt0, clocktime);
+
+    // If yes broadcast distance table to neighbors
+    broadcast(NODE_NUM, neighbor0, &dt0, clocktime);
+  }
 }
