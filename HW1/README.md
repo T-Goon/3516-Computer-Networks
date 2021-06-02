@@ -2,6 +2,8 @@
 
 A simple HTTP client and server made from scratch using C socket programming.
 
+More details can be found in "Project_1_A20/Project_1_A20.pdf".
+
 ## Client:
 
 A C program that prompts the user for an ip address or URL and then sends a GET request to download the HTML of the webpage hosted there.
