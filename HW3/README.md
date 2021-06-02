@@ -25,6 +25,14 @@ The C files that hold the code for the initialization and updating of each node'
 
 The files that hold the code common to node[0/1/2/3].c.
 
+### project3.c/.h
+
+The files that create the simulated network environment for this project.
+
+### Makefile
+
+The file that is used to compile this project.
+
 ## Usage
 Put
 Makefile,
