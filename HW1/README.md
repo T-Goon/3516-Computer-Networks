@@ -16,6 +16,9 @@ To compile the code use `make`.
 To run the client:
 `./http_client [-p] <server URL/ip> <port number>`
 
+Options:
+- -p - Makes the client print out the RTT (Round trip time) of connecting the specified server.
+
 ## Server:
 A C program that hosts a simple website and appropriately handles a variety of HTTP requests and responses.
 
@@ -26,6 +29,3 @@ To compile the code use `make`.
 
 To run the server:
 `./http_server <port number>`
-
-Options:
-- -p - Makes the client print out the RTT (Round trip time) of connecting the specified server.
